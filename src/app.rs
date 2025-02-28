@@ -11,7 +11,10 @@ use ratatui::{
 };
 use std::io;
 
-type State = Vec<game::State>;
+pub struct State {
+    turns: Vec<game::State>,
+    use_weapon: bool,
+}
 
 #[derive(Debug, Default)]
 pub struct App {
@@ -22,13 +25,17 @@ impl StatefulWidget for &mut App {
     type State = State;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
-        let current_state = state.last().unwrap();
+        let current_state = state.turns.last().unwrap();
         let title = Line::from(" Scoundrel ".bold());
         let instructions = Line::from(vec![
             " Health ".into(),
             current_state.health.to_string().green().bold(),
             " Deck ".into(),
             current_state.deck.len().to_string().bold(),
+            " Using weapon ".into(),
+            state.use_weapon.to_string().bold(),
+            " Toggle Use Weapon ".into(),
+            "<T>".blue().bold(),
             " Undo ".into(),
             "<U>".blue().bold(),
             " Quit ".into(),
@@ -74,7 +81,10 @@ impl StatefulWidget for &mut App {
 
 impl App {
     pub fn run(&mut self, terminal: &mut DefaultTerminal) -> io::Result<()> {
-        let mut state = vec![game::State::new()];
+        let mut state = State {
+            turns: vec![game::State::new()],
+            use_weapon: true,
+        };
         while !self.exit {
             terminal.draw(|frame| self.draw(frame, &mut state))?;
             self.handle_events(&mut state)?;
@@ -94,21 +104,44 @@ impl App {
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
             KeyCode::Char('u') => {
-                if state.len() > 1 {
-                    state.pop();
+                if state.turns.len() > 1 {
+                    state.turns.pop();
                 }
             }
+            KeyCode::Char('w') => {
+                state.use_weapon = !state.use_weapon;
+            }
             KeyCode::Char('1') => {
-                state.last().unwrap().play(0).map(|s| state.push(s));
+                state
+                    .turns
+                    .last()
+                    .unwrap()
+                    .play(0, state.use_weapon)
+                    .map(|s| state.turns.push(s));
             }
             KeyCode::Char('2') => {
-                state.last().unwrap().play(1).map(|s| state.push(s));
+                state
+                    .turns
+                    .last()
+                    .unwrap()
+                    .play(1, state.use_weapon)
+                    .map(|s| state.turns.push(s));
             }
             KeyCode::Char('3') => {
-                state.last().unwrap().play(2).map(|s| state.push(s));
+                state
+                    .turns
+                    .last()
+                    .unwrap()
+                    .play(2, state.use_weapon)
+                    .map(|s| state.turns.push(s));
             }
             KeyCode::Char('4') => {
-                state.last().unwrap().play(3).map(|s| state.push(s));
+                state
+                    .turns
+                    .last()
+                    .unwrap()
+                    .play(3, state.use_weapon)
+                    .map(|s| state.turns.push(s));
             }
             _ => {}
         }

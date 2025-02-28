@@ -47,16 +47,15 @@ impl State {
         }
     }
 
-    fn fight(&self, card: Card) -> Option<State> {
+    fn fight(&self, card: Card, use_weapon: bool) -> Option<State> {
         if ![Suit::Spades, Suit::Clubs].contains(&card.suit) {
             return None;
         }
         let health: isize;
-        match self.weapon {
-            None => health = self.health - card.rank.value() as isize,
-            Some(weapon) => {
-                health = self.health - (card.rank.value() + weapon.rank.value()) as isize
-            }
+        if !use_weapon || self.weapon.is_none() {
+            health = self.health - card.rank.value() as isize;
+        } else {
+            health = self.health - (card.rank.value() + self.weapon.unwrap().rank.value()) as isize;
         }
         Some(State {
             health,
@@ -79,7 +78,7 @@ impl State {
         })
     }
 
-    pub fn play(&self, pos: usize) -> Option<State> {
+    pub fn play(&self, pos: usize, use_weapon: bool) -> Option<State> {
         if pos > 3 {
             return None;
         }
@@ -89,10 +88,10 @@ impl State {
 
         let card = self.open[pos].unwrap();
         let turn = match card.suit {
-            Suit::Spades => self.fight(card),
+            Suit::Spades => self.fight(card, use_weapon),
             Suit::Hearts => self.heal(card),
             Suit::Diamonds => None,
-            Suit::Clubs => self.fight(card),
+            Suit::Clubs => self.fight(card, use_weapon),
         };
 
         if turn.is_none() {
