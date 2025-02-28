@@ -37,7 +37,7 @@ impl StatefulWidget for &mut App {
             " Using weapon ".into(),
             state.use_weapon.to_string().bold(),
             " Toggle Use Weapon ".into(),
-            "<T>".blue().bold(),
+            "<W>".blue().bold(),
             " Undo ".into(),
             "<U>".blue().bold(),
             " Quit ".into(),

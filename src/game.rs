@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::cmp::{max, min};
 
 use rand::seq::SliceRandom;
 
@@ -56,9 +56,9 @@ impl State {
 
         let health: isize;
         if !use_weapon || self.weapon.is_none() {
-            health = self.health - card.rank.value() as isize;
+            health = self.health - card.rank.value();
         } else {
-            health = self.health - (card.rank.value() + self.weapon.unwrap().rank.value()) as isize;
+            health = self.health - max(card.rank.value() - self.weapon.unwrap().rank.value(), 0);
         }
 
         Some(State {
@@ -79,7 +79,7 @@ impl State {
         if self.used_heal {
             new_health = self.health;
         } else {
-            new_health = min(self.health + card.rank.value() as isize, MAX_HEALTH);
+            new_health = min(self.health + card.rank.value(), MAX_HEALTH);
         }
 
         Some(State {
@@ -88,6 +88,20 @@ impl State {
             open: self.open,
             weapon: self.weapon,
             used_heal: true,
+        })
+    }
+
+    fn equip_weapon(&self, card: Card) -> Option<State> {
+        if !(card.suit == Suit::Diamonds) {
+            return None;
+        }
+
+        Some(State {
+            health: self.health,
+            deck: self.deck.clone(),
+            open: self.open,
+            weapon: Some(card),
+            used_heal: self.used_heal,
         })
     }
 
@@ -103,7 +117,7 @@ impl State {
         let turn = match card.suit {
             Suit::Spades => self.fight(card, use_weapon),
             Suit::Hearts => self.heal(card),
-            Suit::Diamonds => None,
+            Suit::Diamonds => self.equip_weapon(card),
             Suit::Clubs => self.fight(card, use_weapon),
         };
 

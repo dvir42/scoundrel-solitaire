@@ -52,7 +52,7 @@ impl Rank {
         }
     }
 
-    pub fn value(self) -> usize {
+    pub fn value(self) -> isize {
         match self {
             Rank::Two => 2,
             Rank::Three => 3,
