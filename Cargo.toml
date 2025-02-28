@@ -1,0 +1,13 @@
+[package]
+name = "scoundrel-solitaire"
+version = "0.1.0"
+authors = ["Dvir Rassovsky <dvir@rassovsky.com>"]
+license = "MIT"
+edition = "2021"
+
+[dependencies]
+crossterm = "0.28.1"
+rand = "0.9.0"
+ratatui = "0.29.0"
+strum = "0.27.1"
+strum_macros = "0.27.1"
