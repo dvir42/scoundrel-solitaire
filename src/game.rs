@@ -1,7 +1,11 @@
+use std::cmp::min;
+
 use rand::seq::SliceRandom;
 
 use crate::card::{Card, Rank, Suit};
 use strum::IntoEnumIterator;
+
+const MAX_HEALTH: isize = 20;
 
 #[derive(Debug)]
 pub struct State {
@@ -36,7 +40,7 @@ impl State {
         let mut deck = random_deck();
         let open = [deck.pop(), deck.pop(), deck.pop(), deck.pop()];
         State {
-            health: 20,
+            health: MAX_HEALTH,
             deck,
             open,
             weapon: None,
@@ -62,6 +66,19 @@ impl State {
         })
     }
 
+    fn heal(&self, card: Card) -> Option<State> {
+        if !(card.suit == Suit::Hearts) {
+            return None;
+        }
+
+        Some(State {
+            health: min(self.health + card.rank.value() as isize, MAX_HEALTH),
+            deck: self.deck.clone(),
+            open: self.open,
+            weapon: self.weapon,
+        })
+    }
+
     pub fn play(&self, pos: usize) -> Option<State> {
         if pos > 3 {
             return None;
@@ -73,7 +90,7 @@ impl State {
         let card = self.open[pos].unwrap();
         let turn = match card.suit {
             Suit::Spades => self.fight(card),
-            Suit::Hearts => None,
+            Suit::Hearts => self.heal(card),
             Suit::Diamonds => None,
             Suit::Clubs => self.fight(card),
         };
