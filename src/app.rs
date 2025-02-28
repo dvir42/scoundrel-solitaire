@@ -30,6 +30,8 @@ impl StatefulWidget for &mut App {
         let instructions = Line::from(vec![
             " Health ".into(),
             current_state.health.to_string().green().bold(),
+            " Used heal ".into(),
+            current_state.used_heal.to_string().bold(),
             " Deck ".into(),
             current_state.deck.len().to_string().bold(),
             " Using weapon ".into(),

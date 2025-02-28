@@ -13,6 +13,7 @@ pub struct State {
     pub deck: Vec<Card>,
     pub open: [Option<Card>; 4],
     pub weapon: Option<Card>,
+    pub used_heal: bool,
 }
 
 fn random_deck() -> Vec<Card> {
@@ -44,6 +45,7 @@ impl State {
             deck,
             open,
             weapon: None,
+            used_heal: false,
         }
     }
 
@@ -51,17 +53,20 @@ impl State {
         if ![Suit::Spades, Suit::Clubs].contains(&card.suit) {
             return None;
         }
+
         let health: isize;
         if !use_weapon || self.weapon.is_none() {
             health = self.health - card.rank.value() as isize;
         } else {
             health = self.health - (card.rank.value() + self.weapon.unwrap().rank.value()) as isize;
         }
+
         Some(State {
             health,
             deck: self.deck.clone(),
             open: self.open,
             weapon: self.weapon,
+            used_heal: self.used_heal,
         })
     }
 
@@ -70,11 +75,19 @@ impl State {
             return None;
         }
 
+        let new_health;
+        if self.used_heal {
+            new_health = self.health;
+        } else {
+            new_health = min(self.health + card.rank.value() as isize, MAX_HEALTH);
+        }
+
         Some(State {
-            health: min(self.health + card.rank.value() as isize, MAX_HEALTH),
+            health: new_health,
             deck: self.deck.clone(),
             open: self.open,
             weapon: self.weapon,
+            used_heal: true,
         })
     }
 
@@ -107,7 +120,8 @@ impl State {
                 new_state.deck.pop(),
                 new_state.deck.pop(),
                 new_state.deck.pop(),
-            ]
+            ];
+            new_state.used_heal = false;
         }
 
         Some(new_state)
