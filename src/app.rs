@@ -27,28 +27,33 @@ impl StatefulWidget for &mut App {
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         let current_state = state.turns.last().unwrap();
         let title = Line::from(" Scoundrel ".bold());
-        let instructions = Line::from(vec![
-            " Toggle Use Weapon ".into(),
-            "<W>".blue().bold(),
-            " Undo ".into(),
-            "<U>".blue().bold(),
-            " Quit ".into(),
-            "<Q> ".blue().bold(),
-        ]);
+
         let status = Line::from(vec![
             " Health ".into(),
             current_state.health.to_string().green().bold(),
-            " Used heal ".into(),
+            " | Used heal ".into(),
             current_state.used_heal.to_string().bold(),
-            " Deck ".into(),
+            " | Deck ".into(),
             current_state.deck.len().to_string().bold(),
-            " Using weapon ".into(),
+            " | Using weapon ".into(),
             state.use_weapon.to_string().bold(),
-        ]);
+            " ".into(),
+        ])
+        .left_aligned();
+        let instructions = Line::from(vec![
+            " Toggle Use Weapon ".into(),
+            "<W>".blue().bold(),
+            " | Undo ".into(),
+            "<U>".blue().bold(),
+            " | Quit ".into(),
+            "<Q> ".blue().bold(),
+        ])
+        .right_aligned();
+
         let block = Block::bordered()
             .title(title.centered())
-            .title_bottom(instructions.centered())
-            .title_bottom(status.right_aligned())
+            .title_bottom(status)
+            .title_bottom(instructions)
             .border_set(border::THICK);
 
         let inner_area = area.inner(Margin {
