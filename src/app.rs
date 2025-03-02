@@ -2,7 +2,7 @@ use crate::game;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Margin, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::Stylize,
     symbols::border,
     text::Line,
@@ -56,35 +56,43 @@ impl StatefulWidget for &mut App {
             .title_bottom(instructions)
             .border_set(border::THICK);
 
-        let inner_area = area.inner(Margin {
-            vertical: 1,
-            horizontal: 2,
-        });
+        let inner_area = Layout::default()
+            .vertical_margin(1)
+            .horizontal_margin(2)
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Ratio(1, 2); 2])
+            .split(area);
 
-        let chunks = Layout::default()
+        let room_area = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
                 Constraint::Percentage(20),
-                Constraint::Percentage(12),
-                Constraint::Percentage(12),
-                Constraint::Percentage(12),
-                Constraint::Percentage(12),
-                Constraint::Percentage(12),
+                Constraint::Ratio(1, 5),
+                Constraint::Ratio(1, 5),
+                Constraint::Ratio(1, 5),
+                Constraint::Ratio(1, 5),
+                Constraint::Ratio(1, 5),
                 Constraint::Percentage(20),
             ])
-            .split(inner_area);
+            .split(inner_area[0]);
 
         match current_state.deck.first() {
             None => (),
-            Some(card) => card.face_down().render(chunks[1], buf),
+            Some(card) => card.face_down().render(room_area[1], buf),
         };
 
         for (i, card) in current_state.open.iter().enumerate() {
             match card {
                 None => continue,
-                Some(c) => c.face_up().render(chunks[i + 2], buf),
+                Some(c) => c.face_up().render(room_area[i + 2], buf),
             }
         }
+
+        match current_state.weapon {
+            None => (),
+            Some(c) => c.face_up().render(inner_area[1], buf),
+        }
+
         block.render(area, buf);
     }
 }
