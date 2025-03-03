@@ -2,7 +2,7 @@ use crate::game;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Flex, Layout, Rect},
+    layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Style, Stylize},
     symbols::border,
     text::{Line, Span},
@@ -104,8 +104,12 @@ impl StatefulWidget for &mut App {
                 ]
                 .concat(),
             )
-            .flex(Flex::Start)
-            .split(room_area[1]);
+            .split(
+                Layout::default()
+                    .direction(Direction::Vertical)
+                    .constraints([Constraint::Length(1), Constraint::Fill(1)])
+                    .split(room_area[1])[1],
+            );
 
         let weapon_area = Layout::default()
             .direction(Direction::Horizontal)
@@ -118,7 +122,6 @@ impl StatefulWidget for &mut App {
                 ]
                 .concat(),
             )
-            .flex(Flex::Start)
             .split(inner_area[1]);
 
         for i in 0..4 {
@@ -132,9 +135,17 @@ impl StatefulWidget for &mut App {
         }
 
         for (i, card) in current_state.open.iter().enumerate() {
+            let card_area = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Length(1), Constraint::Fill(1)])
+                .split(room_area[i + 2]);
+            format!(" {}", i + 1)
+                .bold()
+                .into_centered_line()
+                .render(card_area[0], buf);
             match card {
                 None => continue,
-                Some(c) => c.face_up().render(room_area[i + 2], buf),
+                Some(c) => c.face_up().render(card_area[1], buf),
             }
         }
 
