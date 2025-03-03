@@ -10,10 +10,11 @@ const MAX_HEALTH: isize = 20;
 #[derive(Debug)]
 pub struct State {
     pub health: isize,
+    pub used_heal: bool,
     pub deck: Vec<Card>,
     pub open: [Option<Card>; 4],
     pub weapon: Option<Card>,
-    pub used_heal: bool,
+    pub killed_with_weapon: Vec<Card>,
 }
 
 fn random_deck() -> Vec<Card> {
@@ -42,10 +43,11 @@ impl State {
         let open = [deck.pop(), deck.pop(), deck.pop(), deck.pop()];
         State {
             health: MAX_HEALTH,
+            used_heal: false,
             deck,
             open,
             weapon: None,
-            used_heal: false,
+            killed_with_weapon: Vec::new(),
         }
     }
 
@@ -54,19 +56,27 @@ impl State {
             return None;
         }
 
+        let can_use_weapon = match self.killed_with_weapon.last() {
+            None => true,
+            Some(last_killed) => card.rank.value() <= last_killed.rank.value(),
+        };
+
         let health: isize;
-        if !use_weapon || self.weapon.is_none() {
+        let mut killed_with_weapon = self.killed_with_weapon.clone();
+        if !use_weapon || self.weapon.is_none() || !can_use_weapon {
             health = self.health - card.rank.value();
         } else {
             health = self.health - max(card.rank.value() - self.weapon.unwrap().rank.value(), 0);
+            killed_with_weapon.push(card);
         }
 
         Some(State {
             health,
+            used_heal: self.used_heal,
             deck: self.deck.clone(),
             open: self.open,
             weapon: self.weapon,
-            used_heal: self.used_heal,
+            killed_with_weapon,
         })
     }
 
@@ -84,10 +94,11 @@ impl State {
 
         Some(State {
             health: new_health,
+            used_heal: true,
             deck: self.deck.clone(),
             open: self.open,
             weapon: self.weapon,
-            used_heal: true,
+            killed_with_weapon: self.killed_with_weapon.clone(),
         })
     }
 
@@ -98,10 +109,11 @@ impl State {
 
         Some(State {
             health: self.health,
+            used_heal: self.used_heal,
             deck: self.deck.clone(),
             open: self.open,
             weapon: Some(card),
-            used_heal: self.used_heal,
+            killed_with_weapon: Vec::new(),
         })
     }
 

@@ -2,10 +2,10 @@ use crate::game;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
-    style::Stylize,
+    layout::{Constraint, Direction, Flex, Layout, Rect},
+    style::{Color, Style, Stylize},
     symbols::border,
-    text::Line,
+    text::{Line, Span},
     widgets::{Block, StatefulWidget, Widget},
     DefaultTerminal, Frame,
 };
@@ -36,7 +36,15 @@ impl StatefulWidget for &mut App {
             " | Deck ".into(),
             current_state.deck.len().to_string().bold(),
             " | Using weapon ".into(),
-            state.use_weapon.to_string().bold(),
+            Into::<Span>::into(state.use_weapon.to_string()).style(
+                Style::default()
+                    .fg(if state.use_weapon {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    })
+                    .bold(),
+            ),
             " ".into(),
         ])
         .left_aligned();
@@ -65,21 +73,51 @@ impl StatefulWidget for &mut App {
 
         let room_area = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([
-                Constraint::Percentage(20),
-                Constraint::Ratio(1, 5),
-                Constraint::Ratio(1, 5),
-                Constraint::Ratio(1, 5),
-                Constraint::Ratio(1, 5),
-                Constraint::Ratio(1, 5),
-                Constraint::Percentage(20),
-            ])
+            .constraints(
+                [
+                    [Constraint::Percentage(20)].to_vec(),
+                    [Constraint::Ratio(1, 5); 5].to_vec(),
+                    [Constraint::Percentage(20)].to_vec(),
+                ]
+                .concat(),
+            )
             .split(inner_area[0]);
 
-        match current_state.deck.first() {
-            None => (),
-            Some(card) => card.face_down().render(room_area[1], buf),
-        };
+        let deck_area = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [
+                    [Constraint::Length(1); 3].to_vec(),
+                    [Constraint::Fill(1)].to_vec(),
+                ]
+                .concat(),
+            )
+            .flex(Flex::Start)
+            .split(room_area[1]);
+
+        let weapon_area = Layout::default()
+            .direction(Direction::Horizontal)
+            .constraints(
+                [
+                    [Constraint::Percentage(20)].to_vec(),
+                    [Constraint::Length(4)].repeat(current_state.killed_with_weapon.len()),
+                    [Constraint::Fill(1)].to_vec(),
+                    [Constraint::Percentage(20)].to_vec(),
+                ]
+                .concat(),
+            )
+            .flex(Flex::Start)
+            .split(inner_area[1]);
+
+        for i in 0..4 {
+            match current_state.deck.get(i) {
+                None => continue,
+                Some(card) => card
+                    .face_down()
+                    .left_aligned()
+                    .render(deck_area[3 - i], buf),
+            };
+        }
 
         for (i, card) in current_state.open.iter().enumerate() {
             match card {
@@ -90,7 +128,15 @@ impl StatefulWidget for &mut App {
 
         match current_state.weapon {
             None => (),
-            Some(c) => c.face_up().render(inner_area[1], buf),
+            Some(weapon) => {
+                weapon.face_up().left_aligned().render(weapon_area[1], buf);
+                for (i, killed) in current_state.killed_with_weapon.iter().enumerate() {
+                    killed
+                        .face_up()
+                        .left_aligned()
+                        .render(weapon_area[i + 2], buf);
+                }
+            }
         }
 
         block.render(area, buf);
