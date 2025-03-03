@@ -12,6 +12,7 @@ const MAX_HEALTH: isize = 20;
 
 #[derive(Debug)]
 pub struct State {
+    played_in_room: usize,
     pub health: isize,
     pub used_heal: bool,
     pub deck: VecDeque<Card>,
@@ -19,6 +20,7 @@ pub struct State {
     pub weapon: Option<Card>,
     pub killed_with_weapon: Vec<Card>,
     pub can_run: bool,
+    pub game_over: bool,
 }
 
 fn random_deck() -> VecDeque<Card> {
@@ -35,6 +37,7 @@ fn random_deck() -> VecDeque<Card> {
             })
         })
         .flatten()
+        .take(5)
         .collect();
     let mut rng = rand::rng();
     cards.shuffle(&mut rng);
@@ -51,6 +54,7 @@ impl State {
             deck.pop_front(),
         ];
         State {
+            played_in_room: 0,
             health: MAX_HEALTH,
             used_heal: false,
             deck,
@@ -58,6 +62,7 @@ impl State {
             weapon: None,
             killed_with_weapon: Vec::new(),
             can_run: true,
+            game_over: false,
         }
     }
 
@@ -81,6 +86,7 @@ impl State {
         }
 
         Some(State {
+            played_in_room: self.played_in_room,
             health,
             used_heal: self.used_heal,
             deck: self.deck.clone(),
@@ -88,6 +94,7 @@ impl State {
             weapon: self.weapon,
             killed_with_weapon,
             can_run: self.can_run,
+            game_over: self.game_over,
         })
     }
 
@@ -104,6 +111,7 @@ impl State {
         }
 
         Some(State {
+            played_in_room: self.played_in_room,
             health: new_health,
             used_heal: true,
             deck: self.deck.clone(),
@@ -111,6 +119,7 @@ impl State {
             weapon: self.weapon,
             killed_with_weapon: self.killed_with_weapon.clone(),
             can_run: self.can_run,
+            game_over: self.game_over,
         })
     }
 
@@ -120,6 +129,7 @@ impl State {
         }
 
         Some(State {
+            played_in_room: self.played_in_room,
             health: self.health,
             used_heal: self.used_heal,
             deck: self.deck.clone(),
@@ -127,6 +137,7 @@ impl State {
             weapon: Some(card),
             killed_with_weapon: Vec::new(),
             can_run: self.can_run,
+            game_over: self.game_over,
         })
     }
 
@@ -153,17 +164,26 @@ impl State {
         let mut new_state = action.unwrap();
         new_state.open[pos] = None;
 
-        if new_state.open.iter().flatten().count() == 1 {
+        new_state.played_in_room += 1;
+
+        if new_state.played_in_room == 3 {
             new_state.open = [
                 new_state.open.iter().flatten().last().copied(),
                 new_state.deck.pop_front(),
                 new_state.deck.pop_front(),
                 new_state.deck.pop_front(),
             ];
+            new_state.played_in_room = 0;
             new_state.used_heal = false;
             new_state.can_run = true;
         } else {
             new_state.can_run = false;
+        }
+
+        if new_state.health <= 0
+            || (new_state.deck.len() <= 0 && new_state.open.iter().all(|c| c.is_none()))
+        {
+            new_state.game_over = true;
         }
 
         Some(new_state)
@@ -176,7 +196,10 @@ impl State {
 
         let mut deck = self.deck.clone();
         for card in self.open {
-            deck.push_back(card.unwrap());
+            match card {
+                None => continue,
+                Some(c) => deck.push_back(c),
+            };
         }
         let open = [
             deck.pop_front(),
@@ -185,6 +208,7 @@ impl State {
             deck.pop_front(),
         ];
         Some(State {
+            played_in_room: 0,
             health: self.health,
             used_heal: self.used_heal,
             deck,
@@ -192,6 +216,7 @@ impl State {
             weapon: self.weapon,
             killed_with_weapon: self.killed_with_weapon.clone(),
             can_run: false,
+            game_over: self.game_over,
         })
     }
 }

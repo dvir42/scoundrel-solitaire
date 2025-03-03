@@ -2,7 +2,7 @@ use crate::game;
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind};
 use ratatui::{
     buffer::Buffer,
-    layout::{Constraint, Direction, Layout, Rect},
+    layout::{Constraint, Direction, Flex, Layout, Rect},
     style::{Color, Style, Stylize},
     symbols::border,
     text::{Line, Span},
@@ -10,6 +10,7 @@ use ratatui::{
     DefaultTerminal, Frame,
 };
 use std::io;
+use tui_big_text::{BigText, PixelSize};
 
 pub struct State {
     turns: Vec<game::State>,
@@ -76,8 +77,34 @@ impl StatefulWidget for &mut App {
             .title_bottom(instructions)
             .border_set(border::THICK);
 
+        block.render(area, buf);
+
+        if current_state.game_over {
+            BigText::builder()
+                .pixel_size(PixelSize::Full)
+                .centered()
+                .lines(vec![
+                    "You".into(),
+                    if current_state.health <= 0 {
+                        "Lose".red().into()
+                    } else {
+                        "Win".green().into()
+                    },
+                ])
+                .build()
+                .render(
+                    Layout::default()
+                        .direction(Direction::Vertical)
+                        .flex(Flex::Center)
+                        .constraints([Constraint::Length(16)])
+                        .split(area)[0],
+                    buf,
+                );
+            return;
+        }
+
         let inner_area = Layout::default()
-            .vertical_margin(1)
+            .vertical_margin(4)
             .horizontal_margin(2)
             .direction(Direction::Vertical)
             .constraints([Constraint::Ratio(1, 2); 2])
@@ -161,8 +188,6 @@ impl StatefulWidget for &mut App {
                 }
             }
         }
-
-        block.render(area, buf);
     }
 }
 
@@ -188,6 +213,8 @@ impl App {
     }
 
     fn handle_key_event(&mut self, key_event: KeyEvent, state: &mut State) {
+        let current_state = state.turns.last().unwrap();
+
         match key_event.code {
             KeyCode::Char('q') => self.exit(),
             KeyCode::Char('u') => {
@@ -199,44 +226,37 @@ impl App {
                 state.use_weapon = !state.use_weapon;
             }
             KeyCode::Char('r') => {
-                state
-                    .turns
-                    .last()
-                    .unwrap()
-                    .run()
-                    .map(|s| state.turns.push(s));
+                if !current_state.game_over {
+                    current_state.run().map(|s| state.turns.push(s));
+                }
             }
             KeyCode::Char('1') => {
-                state
-                    .turns
-                    .last()
-                    .unwrap()
-                    .play(0, state.use_weapon)
-                    .map(|s| state.turns.push(s));
+                if !current_state.game_over {
+                    current_state
+                        .play(0, state.use_weapon)
+                        .map(|s| state.turns.push(s));
+                }
             }
             KeyCode::Char('2') => {
-                state
-                    .turns
-                    .last()
-                    .unwrap()
-                    .play(1, state.use_weapon)
-                    .map(|s| state.turns.push(s));
+                if !current_state.game_over {
+                    current_state
+                        .play(1, state.use_weapon)
+                        .map(|s| state.turns.push(s));
+                }
             }
             KeyCode::Char('3') => {
-                state
-                    .turns
-                    .last()
-                    .unwrap()
-                    .play(2, state.use_weapon)
-                    .map(|s| state.turns.push(s));
+                if !current_state.game_over {
+                    current_state
+                        .play(2, state.use_weapon)
+                        .map(|s| state.turns.push(s));
+                }
             }
             KeyCode::Char('4') => {
-                state
-                    .turns
-                    .last()
-                    .unwrap()
-                    .play(3, state.use_weapon)
-                    .map(|s| state.turns.push(s));
+                if !current_state.game_over {
+                    current_state
+                        .play(3, state.use_weapon)
+                        .map(|s| state.turns.push(s));
+                }
             }
             _ => {}
         }
