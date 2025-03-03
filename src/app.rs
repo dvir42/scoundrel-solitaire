@@ -45,12 +45,24 @@ impl StatefulWidget for &mut App {
                     })
                     .bold(),
             ),
+            " | Can run ".into(),
+            Into::<Span>::into(current_state.can_run.to_string()).style(
+                Style::default()
+                    .fg(if current_state.can_run {
+                        Color::Green
+                    } else {
+                        Color::Red
+                    })
+                    .bold(),
+            ),
             " ".into(),
         ])
         .left_aligned();
         let instructions = Line::from(vec![
             " Toggle Use Weapon ".into(),
             "<W>".blue().bold(),
+            " | Run ".into(),
+            "<R>".blue().bold(),
             " | Undo ".into(),
             "<U>".blue().bold(),
             " | Quit ".into(),
@@ -174,6 +186,14 @@ impl App {
             }
             KeyCode::Char('w') => {
                 state.use_weapon = !state.use_weapon;
+            }
+            KeyCode::Char('r') => {
+                state
+                    .turns
+                    .last()
+                    .unwrap()
+                    .run()
+                    .map(|s| state.turns.push(s));
             }
             KeyCode::Char('1') => {
                 state

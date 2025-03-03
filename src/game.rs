@@ -1,4 +1,7 @@
-use std::cmp::{max, min};
+use std::{
+    cmp::{max, min},
+    collections::VecDeque,
+};
 
 use rand::seq::SliceRandom;
 
@@ -11,13 +14,14 @@ const MAX_HEALTH: isize = 20;
 pub struct State {
     pub health: isize,
     pub used_heal: bool,
-    pub deck: Vec<Card>,
+    pub deck: VecDeque<Card>,
     pub open: [Option<Card>; 4],
     pub weapon: Option<Card>,
     pub killed_with_weapon: Vec<Card>,
+    pub can_run: bool,
 }
 
-fn random_deck() -> Vec<Card> {
+fn random_deck() -> VecDeque<Card> {
     let mut cards: Vec<Card> = Rank::iter()
         .flat_map(|rank| {
             Suit::iter().map(move |suit| {
@@ -34,13 +38,18 @@ fn random_deck() -> Vec<Card> {
         .collect();
     let mut rng = rand::rng();
     cards.shuffle(&mut rng);
-    cards
+    VecDeque::from(cards)
 }
 
 impl State {
     pub fn new() -> State {
         let mut deck = random_deck();
-        let open = [deck.pop(), deck.pop(), deck.pop(), deck.pop()];
+        let open = [
+            deck.pop_front(),
+            deck.pop_front(),
+            deck.pop_front(),
+            deck.pop_front(),
+        ];
         State {
             health: MAX_HEALTH,
             used_heal: false,
@@ -48,6 +57,7 @@ impl State {
             open,
             weapon: None,
             killed_with_weapon: Vec::new(),
+            can_run: true,
         }
     }
 
@@ -77,6 +87,7 @@ impl State {
             open: self.open,
             weapon: self.weapon,
             killed_with_weapon,
+            can_run: self.can_run,
         })
     }
 
@@ -99,6 +110,7 @@ impl State {
             open: self.open,
             weapon: self.weapon,
             killed_with_weapon: self.killed_with_weapon.clone(),
+            can_run: self.can_run,
         })
     }
 
@@ -114,6 +126,7 @@ impl State {
             open: self.open,
             weapon: Some(card),
             killed_with_weapon: Vec::new(),
+            can_run: self.can_run,
         })
     }
 
@@ -126,30 +139,59 @@ impl State {
         }
 
         let card = self.open[pos].unwrap();
-        let turn = match card.suit {
+        let action = match card.suit {
             Suit::Spades => self.fight(card, use_weapon),
             Suit::Hearts => self.heal(card),
             Suit::Diamonds => self.equip_weapon(card),
             Suit::Clubs => self.fight(card, use_weapon),
         };
 
-        if turn.is_none() {
+        if action.is_none() {
             return None;
         }
 
-        let mut new_state = turn.unwrap();
+        let mut new_state = action.unwrap();
         new_state.open[pos] = None;
 
         if new_state.open.iter().flatten().count() == 1 {
             new_state.open = [
                 new_state.open.iter().flatten().last().copied(),
-                new_state.deck.pop(),
-                new_state.deck.pop(),
-                new_state.deck.pop(),
+                new_state.deck.pop_front(),
+                new_state.deck.pop_front(),
+                new_state.deck.pop_front(),
             ];
             new_state.used_heal = false;
+            new_state.can_run = true;
+        } else {
+            new_state.can_run = false;
         }
 
         Some(new_state)
+    }
+
+    pub fn run(&self) -> Option<State> {
+        if !self.can_run {
+            return None;
+        }
+
+        let mut deck = self.deck.clone();
+        for card in self.open {
+            deck.push_back(card.unwrap());
+        }
+        let open = [
+            deck.pop_front(),
+            deck.pop_front(),
+            deck.pop_front(),
+            deck.pop_front(),
+        ];
+        Some(State {
+            health: self.health,
+            used_heal: self.used_heal,
+            deck,
+            open,
+            weapon: self.weapon,
+            killed_with_weapon: self.killed_with_weapon.clone(),
+            can_run: false,
+        })
     }
 }
