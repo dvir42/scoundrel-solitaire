@@ -37,7 +37,6 @@ fn random_deck() -> VecDeque<Card> {
             })
         })
         .flatten()
-        .take(5)
         .collect();
     let mut rng = rand::rng();
     cards.shuffle(&mut rng);
