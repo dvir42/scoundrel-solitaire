@@ -80,6 +80,12 @@ impl StatefulWidget for &mut App {
         block.render(area, buf);
 
         if current_state.game_over {
+            let text_area = Layout::default()
+                .direction(Direction::Vertical)
+                .flex(Flex::Center)
+                .constraints([Constraint::Length(16), Constraint::Length(1)])
+                .split(area);
+
             BigText::builder()
                 .pixel_size(PixelSize::Full)
                 .centered()
@@ -92,14 +98,22 @@ impl StatefulWidget for &mut App {
                     },
                 ])
                 .build()
-                .render(
-                    Layout::default()
-                        .direction(Direction::Vertical)
-                        .flex(Flex::Center)
-                        .constraints([Constraint::Length(16)])
-                        .split(area)[0],
-                    buf,
-                );
+                .render(text_area[0], buf);
+
+            Line::from_iter(vec![
+                "Score: ".into(),
+                Span::styled(
+                    current_state.score().to_string(),
+                    Style::default().fg(if current_state.health <= 0 {
+                        Color::Red
+                    } else {
+                        Color::Green
+                    }),
+                ),
+            ])
+            .centered()
+            .render(text_area[1], buf);
+
             return;
         }
 

@@ -13,6 +13,7 @@ const MAX_HEALTH: isize = 20;
 #[derive(Debug)]
 pub struct State {
     played_in_room: usize,
+    played: Option<Card>,
     pub health: isize,
     pub used_heal: bool,
     pub deck: VecDeque<Card>,
@@ -54,6 +55,7 @@ impl State {
         ];
         State {
             played_in_room: 0,
+            played: None,
             health: MAX_HEALTH,
             used_heal: false,
             deck,
@@ -86,6 +88,7 @@ impl State {
 
         Some(State {
             played_in_room: self.played_in_room,
+            played: Some(card),
             health,
             used_heal: self.used_heal,
             deck: self.deck.clone(),
@@ -111,6 +114,7 @@ impl State {
 
         Some(State {
             played_in_room: self.played_in_room,
+            played: Some(card),
             health: new_health,
             used_heal: true,
             deck: self.deck.clone(),
@@ -129,6 +133,7 @@ impl State {
 
         Some(State {
             played_in_room: self.played_in_room,
+            played: Some(card),
             health: self.health,
             used_heal: self.used_heal,
             deck: self.deck.clone(),
@@ -208,6 +213,7 @@ impl State {
         ];
         Some(State {
             played_in_room: 0,
+            played: None,
             health: self.health,
             used_heal: self.used_heal,
             deck,
@@ -217,5 +223,32 @@ impl State {
             can_run: false,
             game_over: self.game_over,
         })
+    }
+
+    pub fn score(&self) -> isize {
+        if self.health <= 0 {
+            [
+                self.deck.iter().collect::<Vec<&Card>>(),
+                self.open.iter().flatten().collect(),
+            ]
+            .concat()
+            .iter()
+            .fold(self.health, |acc, c| {
+                if [Suit::Spades, Suit::Clubs].contains(&c.suit) {
+                    acc - c.rank.value()
+                } else {
+                    acc
+                }
+            })
+        } else {
+            if self.health < 20 {
+                self.health
+            } else {
+                20 + match self.played.unwrap().suit {
+                    Suit::Hearts => self.played.unwrap().rank.value(),
+                    _ => 0,
+                }
+            }
+        }
     }
 }
