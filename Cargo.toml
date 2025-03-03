@@ -1,6 +1,6 @@
 [package]
 name = "scoundrel-solitaire"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["Dvir Rassovsky <dvir@rassovsky.com>"]
 license = "MIT"
 edition = "2021"
